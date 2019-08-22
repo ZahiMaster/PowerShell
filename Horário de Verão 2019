@@ -1,0 +1,86 @@
+#Definindo KB para busca
+$Patch = "KB4507704"
+
+function Get-Info {
+    [CmdletBinding()]
+    Param(
+                [Parameter(Mandatory=$true,
+                 ValueFromPipeline=$true,
+                 ValueFromPipelineByPropertyName=$true)]
+                 [String[]]$ComputerName,
+                 [Switch]$ErrorLog,
+                 [String]$LogFile= '.\Error.log'
+                   
+        )
+
+
+
+    Begin
+    {
+    }
+    Process
+    {
+        foreach($computer in $ComputerName)
+        {
+            Try
+            {
+            $OS = GWMI -CN $computer -class win32_operatingsystem -ErrorAction stop -ErrorVariable RunError
+            $Network = GWMI -CN $computer -Class Win32_NetworkAdapterConfiguration -Filter 'ipenabled = "true"'
+            $IPV4 = Test-Connection -ComputerName $computer -Count 1  | Select -ExpandProperty IPV4Address
+            $System = GWMI -CN $computer -Class win32_computersystem
+            $daylight = Get-CimInstance Win32_TimeZone -ComputerName $computer
+            if   
+                ($kb=Get-HotFix -Id $Patch -ComputerName $computer -ErrorAction SilentlyContinue)
+                {
+                        $kbinstall="$Patch is installed"
+                    }
+            else  
+            {  
+                $kbinstall="$Patch is not installed"  
+                }
+            
+            
+
+
+            $ary = [ordered]@{
+            'ComputerName'= $computer                 #1. Computer Name
+            'OperatingSystem'=$OS.caption             #2. Operating System
+            'IPV4'=$IPV4                              #3. IpV4
+            'KBHV'=$kbinstall                         #4. KB HV 2019   ( KB4507704 )
+            'Timezone'=$daylight.Caption
+    
+    }
+    $Prop = New-Object -TypeName PSObject -Property $ary
+    Write-Output $Prop
+    }
+    Catch{
+        Add-content "Server is not reachable $computer" -path ".\NotReachable-Servers.log"
+        if ($ErrorLog) {
+            [System.TimeZone]::CurrentTimeZone | Out-File $LogFile -Force
+            Get-Date | Out-File $LogFile -Append
+            $computer | Out-File $LogFile -Append
+            $RunError | Out-File $LogFile -Append
+
+        }}
+   
+    }
+
+  }
+End
+    {
+    }
+}
+#HTML Color Code
+#http://technet.microsoft.com/en-us/library/ff730936.aspx
+$date = Get-Date
+
+$a = "<style>"
+$a = $a + "BODY{background-color:BCBCBC;}"
+$a = $a + "TABLE{border-width: 1px;border-style: solid;border-color: black;border-collapse: collapse;}"
+$a = $a + "TH{border-width: 1px;padding: 0px;border-style: solid;border-color: black;background-color:thistle}"
+$a = $a + "TD{border-width: 1px;padding: 0px;border-style: solid;border-color: black;background-color:palegoldenrod}"
+$a = $a + "</style>"
+
+Get-Content -Path .\lan.txt -ReadCount 0 | Get-Info -ErrorLog | ConvertTo-HTML -head $a -body "<H2>Servers Information: $date</H2>" | 
+Out-File .\Get-ServersInfo.htm #HTML Output
+Invoke-Item .\Get-KB-HV-2019.htm
