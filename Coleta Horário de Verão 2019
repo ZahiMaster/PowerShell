@@ -1,7 +1,7 @@
 #Definindo KB para busca
 $Patch = "KB4507704"
 
-function Get-Info {
+function Get-KB-HV-2019 {
     [CmdletBinding()]
     Param(
                 [Parameter(Mandatory=$true,
@@ -81,6 +81,6 @@ $a = $a + "TH{border-width: 1px;padding: 0px;border-style: solid;border-color: b
 $a = $a + "TD{border-width: 1px;padding: 0px;border-style: solid;border-color: black;background-color:palegoldenrod}"
 $a = $a + "</style>"
 
-Get-Content -Path .\lan.txt -ReadCount 0 | Get-Info -ErrorLog | ConvertTo-HTML -head $a -body "<H2>Servers Information: $date</H2>" | 
+Get-Content -Path .\lan.txt -ReadCount 0 | Get-KB-HV-2019 -ErrorLog | ConvertTo-HTML -head $a -body "<H2>Servers Information: $date</H2>" | 
 Out-File .\Get-ServersInfo.htm #HTML Output
 Invoke-Item .\Get-KB-HV-2019.htm
